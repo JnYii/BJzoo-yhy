@@ -69,8 +69,8 @@ class ParkEnvironment:
     date: str
 
     pollen_density: float
-    # 粒 / 1000 mm²
-    # 与 Zhou et al. (2022) Table 1 的花粉浓度分级一致
+    # 粒/m³
+    # 北京市区域背景花粉浓度；本模型主要使用 0–60 的输入范围
 
     wind_speed: float
     # m/s
@@ -463,45 +463,26 @@ def vegetation_score(
 
 
 # ============================================================
-# 木本花粉浓度分级
+# 背景花粉浓度评分
 #
-# Zhou et al. (2022) Table 1:
-# Woody pollen:
-# Level 1 <= 100
-# Level 2 101-250
-# Level 3 251-400
-# Level 4 401-800
-# Level 5 > 800
-# Unit: granule / 1000 mm²
+# 恢复原 BJ Pollenix 的连续型背景花粉算法：
 #
-# 这里把五个等级线性映射到 20/40/60/80/100，
-# 仅用于 dashboard 的 0-100 内部显示。
+# score = 100 / (1 + exp[-0.158 × (pollen_density - 24)])
+#
+# 输入范围主要设为 0–60 粒/m³。
+# 这样背景花粉浓度会连续影响总风险，而不是被压成固定等级。
 # ============================================================
-
-def woody_pollen_level(
-    pollen_density
-):
-    if pollen_density <= 100:
-        return 1
-    elif pollen_density <= 250:
-        return 2
-    elif pollen_density <= 400:
-        return 3
-    elif pollen_density <= 800:
-        return 4
-    else:
-        return 5
-
 
 def pollen_score(
     pollen_density
 ):
-    level = woody_pollen_level(
-        pollen_density
-    )
-
     return (
-        level * 20.0
+        100.0
+        * logistic_unit(
+            pollen_density,
+            midpoint=24.0,
+            steepness=0.158
+        )
     )
 
 
@@ -714,11 +695,6 @@ def calculate_risk(
         env.pollen_density
     )
 
-    pollen_level = (
-        woody_pollen_level(
-            env.pollen_density
-        )
-    )
 
     W = wind_condition_score(
         env.wind_speed
@@ -816,7 +792,7 @@ def calculate_risk(
     )
 
     factors = {
-        "木本花粉": P,
+        "背景花粉": P,
         "局部植被": seasonal_V,
         "风速条件": W,
         "温度条件": T,
@@ -833,8 +809,7 @@ def calculate_risk(
         ),
         "风险等级": level,
         "活动建议": recommendation,
-        "木本花粉等级": pollen_level,
-        "木本花粉评分": round(
+        "背景花粉评分": round(
             P,
             2
         ),
@@ -885,7 +860,7 @@ def calculate_risk(
 
 
 # ============================================================
-# Streamlit UI — Apple-inspired redesign
+# Streamlit UI — Minimal Apple-inspired redesign
 # ============================================================
 
 st.set_page_config(
@@ -895,244 +870,80 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ------------------------------------------------------------
-# Apple-like visual system
-# ------------------------------------------------------------
-
+# 只保留轻量 CSS：
+# - 系统字体
+# - 浅灰背景
+# - 白色圆角 metric 卡片
+# - 轻微阴影
+# 不再用大量嵌套 HTML card，避免元素重叠/穿模。
 st.markdown(
     """
 <style>
-:root{
-    --bg:#F5F5F7;
-    --surface:rgba(255,255,255,0.82);
-    --surface-strong:#FFFFFF;
-    --text:#1D1D1F;
-    --muted:#6E6E73;
-    --line:rgba(0,0,0,0.08);
-    --accent:#0071E3;
-    --accent-soft:#EAF3FF;
-    --green:#2E7D6E;
-    --shadow:0 10px 30px rgba(0,0,0,0.06);
-    --radius:24px;
-}
-
 html, body, [class*="css"]{
     font-family:
         -apple-system,
         BlinkMacSystemFont,
-        "SF Pro Display",
         "SF Pro Text",
+        "SF Pro Display",
         "PingFang SC",
         "Helvetica Neue",
         Arial,
         sans-serif;
-    color:var(--text);
 }
 
 .stApp{
-    background:
-        radial-gradient(circle at 16% 5%, rgba(0,113,227,0.06), transparent 25%),
-        radial-gradient(circle at 88% 10%, rgba(46,125,110,0.05), transparent 28%),
-        var(--bg);
+    background:#F5F5F7;
 }
 
 .block-container{
-    max-width:1280px;
-    padding-top:2.2rem;
-    padding-bottom:4rem;
+    max-width:1180px;
+    padding-top:2rem;
+    padding-bottom:3rem;
 }
 
 section[data-testid="stSidebar"]{
-    background:rgba(248,248,250,0.88);
-    backdrop-filter:blur(24px);
-    border-right:1px solid var(--line);
-}
-
-section[data-testid="stSidebar"] > div{
-    padding-top:1.25rem;
-}
-
-h1,h2,h3{
-    color:var(--text);
-    letter-spacing:-0.02em;
-}
-
-h1{
-    font-size:3.2rem !important;
-    font-weight:760 !important;
-}
-
-h2{
-    font-size:1.55rem !important;
-    font-weight:700 !important;
-}
-
-h3{
-    font-size:1.08rem !important;
-    font-weight:650 !important;
-}
-
-.small-en{
-    color:var(--muted);
-    font-size:0.78rem;
-    margin-top:-0.35rem;
-    margin-bottom:0.65rem;
-    letter-spacing:0.01em;
-}
-
-.hero{
-    background:
-        linear-gradient(135deg, rgba(255,255,255,0.94), rgba(250,250,252,0.86));
-    border:1px solid rgba(255,255,255,0.9);
-    box-shadow:var(--shadow);
-    border-radius:32px;
-    padding:34px 36px;
-    margin-bottom:24px;
-}
-
-.hero-kicker{
-    font-size:0.82rem;
-    color:var(--muted);
-    font-weight:600;
-    margin-bottom:8px;
-    letter-spacing:0.02em;
-}
-
-.hero-title{
-    font-size:2.65rem;
-    font-weight:780;
-    letter-spacing:-0.045em;
-    line-height:1.04;
-    color:var(--text);
-}
-
-.hero-subtitle{
-    color:var(--muted);
-    font-size:1rem;
-    margin-top:12px;
-    max-width:760px;
-    line-height:1.55;
-}
-
-.apple-card{
-    background:var(--surface);
-    border:1px solid rgba(255,255,255,0.95);
-    box-shadow:var(--shadow);
-    border-radius:var(--radius);
-    padding:22px 24px;
-    min-height:140px;
-    backdrop-filter:blur(20px);
-}
-
-.card-label{
-    color:var(--muted);
-    font-size:0.82rem;
-    font-weight:600;
-    margin-bottom:9px;
-}
-
-.card-value{
-    font-size:2rem;
-    font-weight:760;
-    line-height:1.08;
-    color:var(--text);
-    letter-spacing:-0.035em;
-}
-
-.card-sub{
-    margin-top:8px;
-    font-size:0.8rem;
-    color:var(--muted);
-}
-
-.risk-pill{
-    display:inline-block;
-    padding:7px 12px;
-    border-radius:999px;
-    background:#EEF5F3;
-    color:#27695D;
-    font-size:0.82rem;
-    font-weight:700;
-    margin-top:10px;
-}
-
-.section-wrap{
-    background:var(--surface);
-    border:1px solid rgba(255,255,255,0.95);
-    box-shadow:var(--shadow);
-    border-radius:28px;
-    padding:24px 26px 18px 26px;
-    margin-top:18px;
-}
-
-.section-title{
-    font-size:1.28rem;
-    font-weight:720;
-    letter-spacing:-0.025em;
-    margin-bottom:3px;
-}
-
-.section-sub{
-    color:var(--muted);
-    font-size:0.82rem;
-    margin-bottom:12px;
+    background:#FBFBFD;
+    border-right:1px solid rgba(0,0,0,0.07);
 }
 
 [data-testid="stMetric"]{
-    background:rgba(255,255,255,0.80);
-    border:1px solid rgba(255,255,255,0.95);
-    border-radius:22px;
+    background:#FFFFFF;
+    border:1px solid rgba(0,0,0,0.06);
+    border-radius:20px;
     padding:16px 18px;
-    box-shadow:0 8px 22px rgba(0,0,0,0.045);
+    box-shadow:0 6px 18px rgba(0,0,0,0.04);
 }
 
 [data-testid="stMetricLabel"]{
-    color:var(--muted);
+    color:#6E6E73;
 }
 
 [data-testid="stMetricValue"]{
-    color:var(--text);
-    letter-spacing:-0.03em;
-}
-
-.stSlider [data-baseweb="slider"]{
-    padding-top:0.4rem;
-    padding-bottom:0.4rem;
-}
-
-.stSlider [role="slider"]{
-    background:var(--accent) !important;
-    border-color:var(--accent) !important;
-}
-
-.stRadio > div{
-    gap:0.35rem;
+    color:#1D1D1F;
+    letter-spacing:-0.025em;
 }
 
 div[role="radiogroup"]{
-    background:rgba(118,118,128,0.12);
-    border-radius:13px;
+    background:#ECECF1;
+    border-radius:12px;
     padding:3px;
-}
-
-div[role="radiogroup"] label{
-    border-radius:10px;
-    padding:6px 10px;
 }
 
 div[role="radiogroup"] label:has(input:checked){
     background:white;
-    box-shadow:0 1px 5px rgba(0,0,0,0.10);
+    border-radius:9px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.10);
 }
 
 [data-testid="stExpander"]{
-    background:rgba(255,255,255,0.70);
+    background:#FFFFFF;
     border:1px solid rgba(0,0,0,0.06);
-    border-radius:18px;
+    border-radius:16px;
 }
 
-hr{
-    border-color:var(--line);
+h1, h2, h3{
+    color:#1D1D1F;
+    letter-spacing:-0.025em;
 }
 
 footer{
@@ -1145,32 +956,16 @@ footer{
 
 
 # ------------------------------------------------------------
-# Sidebar — park selector + background pollen first
+# Sidebar
 # ------------------------------------------------------------
 
-st.sidebar.markdown(
-    """
-<div style="
-font-size:1.55rem;
-font-weight:760;
-letter-spacing:-0.03em;
-margin:4px 0 2px 0;">
-京粉报
-</div>
-<div style="
-font-size:0.78rem;
-color:#6E6E73;
-margin-bottom:18px;">
-BJ Pollenix
-</div>
-""",
-    unsafe_allow_html=True,
-)
+st.sidebar.title("京粉报")
+st.sidebar.caption("BJ Pollenix")
 
-st.sidebar.markdown("### 公园")
+st.sidebar.subheader("公园")
 selected_park_name = st.sidebar.radio(
-    "Park",
-    options=["北京动物园", "颐和园"],
+    "选择公园",
+    ["北京动物园", "颐和园"],
     horizontal=True,
     label_visibility="collapsed",
 )
@@ -1181,106 +976,101 @@ st.sidebar.caption(
     f"{park.name} · 有效绿地 {park.effective_green_area_ha:.2f} ha"
 )
 
-# The background-pollen algorithm is intentionally preserved.
-# pollen_density still goes directly into ParkEnvironment and calculate_risk().
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 当前背景花粉浓度")
-st.sidebar.caption("Background woody pollen density")
+st.sidebar.divider()
+
+# 重点保留：背景花粉浓度滑条
+st.sidebar.subheader("当前背景花粉浓度")
+st.sidebar.caption("Background pollen density")
 
 pollen_density = st.sidebar.slider(
-    "背景花粉浓度（粒 / 1000 mm²）",
+    "背景花粉浓度（粒/m³）",
     min_value=0,
-    max_value=1200,
-    value=100,
-    step=10,
+    max_value=60,
+    value=30,
+    step=1,
     help=(
-        "这个输入没有被删除。它仍会进入 pollen_score()，"
-        "再进入 calculate_risk() 的背景空气花粉暴露层。"
+        "该值仍直接进入原 BJ Pollenix 的连续型背景花粉算法："
+        "midpoint=24，steepness=0.158。"
     ),
 )
 
-pollen_level_preview = woody_pollen_level(pollen_density)
-st.sidebar.markdown(
-    f"""
-<div style="
-background:#FFFFFF;
-border:1px solid rgba(0,0,0,0.06);
-border-radius:16px;
-padding:12px 14px;
-margin:6px 0 16px 0;
-box-shadow:0 4px 14px rgba(0,0,0,0.035);">
-<div style="font-size:0.75rem;color:#6E6E73;">当前木本花粉等级</div>
-<div style="font-size:1.45rem;font-weight:740;margin-top:2px;">
-Level {pollen_level_preview} / 5
-</div>
-</div>
-""",
-    unsafe_allow_html=True,
+preview_pollen_score = pollen_score(
+    pollen_density
+)
+
+st.sidebar.metric(
+    "背景花粉评分",
+    f"{preview_pollen_score:.1f}/100"
+)
+
+st.sidebar.divider()
+
+date = st.sidebar.date_input(
+    "日期"
 )
 
 with st.sidebar.expander(
     "气象参数",
     expanded=True,
 ):
-    date = st.date_input(
-        "日期",
-    )
-
     wind_speed = st.slider(
         "风速 (m/s)",
-        min_value=0.0,
-        max_value=12.0,
-        value=3.0,
-        step=0.1,
+        0.0,
+        12.0,
+        3.0,
+        0.1,
     )
 
     humidity = st.slider(
         "湿度 (%)",
-        min_value=0,
-        max_value=100,
-        value=55,
-        step=1,
+        0,
+        100,
+        55,
+        1,
     )
 
     rainfall_48h = st.slider(
         "48h 降雨量 (mm)",
-        min_value=0.0,
-        max_value=100.0,
-        value=0.0,
-        step=0.5,
+        0.0,
+        100.0,
+        0.0,
+        0.5,
     )
 
     sunlight_hours = st.slider(
         "日照时长 (h)",
-        min_value=0.0,
-        max_value=15.0,
-        value=8.0,
-        step=0.1,
+        0.0,
+        15.0,
+        8.0,
+        0.1,
     )
 
     temperature = st.slider(
         "温度 (°C)",
-        min_value=-15.0,
-        max_value=40.0,
-        value=17.0,
-        step=0.5,
+        -15.0,
+        40.0,
+        17.0,
+        0.5,
     )
 
     pm25 = st.slider(
         "PM2.5 (μg/m³)",
-        min_value=0,
-        max_value=300,
-        value=35,
-        step=1,
+        0,
+        300,
+        35,
+        1,
     )
 
-st.sidebar.markdown("---")
-st.sidebar.caption(park.data_note)
-st.sidebar.caption(park.reliability_note)
+with st.sidebar.expander(
+    "当前公园数据说明",
+    expanded=False,
+):
+    st.write(park.data_note)
+    st.write(park.reliability_note)
 
 
 # ------------------------------------------------------------
-# Model execution — background pollen preserved
+# Model execution
 # ------------------------------------------------------------
 
 env = ParkEnvironment(
@@ -1303,111 +1093,63 @@ risk = result["风险评分"]
 
 
 # ------------------------------------------------------------
-# Hero
+# Header
 # ------------------------------------------------------------
 
-st.markdown(
-    f"""
-<div class="hero">
-    <div class="hero-kicker">BJ POLLENIX · {park.name}</div>
-    <div class="hero-title">今天的花粉风险，一眼看懂。</div>
-    <div class="hero-subtitle">
-        基于局部致敏植被、背景木本花粉浓度与实时气象条件，
-        生成面向公园场景的实验性过敏风险指数。
-    </div>
-</div>
-""",
-    unsafe_allow_html=True,
+st.title("京粉报")
+st.caption(
+    f"BJ Pollenix · {park.name} · "
+    "基于局部致敏植被、背景花粉与气象条件的实验性风险指数"
+)
+
+st.divider()
+
+
+# ------------------------------------------------------------
+# Primary metrics
+# ------------------------------------------------------------
+
+m1, m2, m3, m4 = st.columns(4)
+
+with m1:
+    st.metric(
+        "综合风险",
+        f"{risk:.1f}/100"
+    )
+
+with m2:
+    st.metric(
+        "风险等级",
+        result["风险等级"]
+    )
+
+with m3:
+    st.metric(
+        "背景花粉",
+        f"{pollen_density} 粒/m³"
+    )
+
+with m4:
+    st.metric(
+        "天气适宜度",
+        f"{result['天气适宜度']:.1f}/100"
+    )
+
+st.info(
+    result["活动建议"]
 )
 
 
 # ------------------------------------------------------------
-# Primary cards
+# Main charts
 # ------------------------------------------------------------
 
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-    st.markdown(
-        f"""
-<div class="apple-card">
-    <div class="card-label">综合风险</div>
-    <div class="card-value">{risk:.2f}</div>
-    <div class="card-sub">/ 100</div>
-    <div class="risk-pill">{result["风险等级"]}</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-with c2:
-    st.markdown(
-        f"""
-<div class="apple-card">
-    <div class="card-label">背景木本花粉</div>
-    <div class="card-value">{pollen_density}</div>
-    <div class="card-sub">粒 / 1000 mm² · Level {result["木本花粉等级"]}/5</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-with c3:
-    st.markdown(
-        f"""
-<div class="apple-card">
-    <div class="card-label">有效绿地</div>
-    <div class="card-value">{park.effective_green_area_ha:.1f}</div>
-    <div class="card-sub">ha · {park.name}</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-with c4:
-    st.markdown(
-        f"""
-<div class="apple-card">
-    <div class="card-label">天气适宜度</div>
-    <div class="card-value">{result["天气适宜度"]:.1f}</div>
-    <div class="card-sub">动态气象修正评分</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-st.markdown(
-    f"""
-<div style="
-margin-top:18px;
-background:rgba(255,255,255,0.76);
-border:1px solid rgba(255,255,255,0.95);
-box-shadow:0 8px 22px rgba(0,0,0,0.04);
-border-radius:20px;
-padding:15px 18px;
-font-size:0.95rem;">
-<b>建议：</b>{result["活动建议"]}
-</div>
-""",
-    unsafe_allow_html=True,
+left, right = st.columns(
+    [1, 1]
 )
-
-
-# ------------------------------------------------------------
-# Risk gauge + vegetation
-# ------------------------------------------------------------
-
-left, right = st.columns([1.05, 0.95])
 
 with left:
-    st.markdown(
-        """
-<div class="section-wrap">
-<div class="section-title">综合风险指数</div>
-<div class="section-sub">Overall risk index</div>
-""",
-        unsafe_allow_html=True,
-    )
+    st.subheader("综合风险")
 
     fig_gauge = go.Figure(
         go.Indicator(
@@ -1415,304 +1157,240 @@ with left:
             value=risk,
             number={
                 "font": {
-                    "size": 42,
-                    "color": "#1D1D1F",
+                    "size": 38,
+                    "color": "#1D1D1F"
                 }
             },
             gauge={
                 "axis": {
-                    "range": [0, 100],
-                    "tickcolor": "#8E8E93",
+                    "range": [0, 100]
                 },
                 "bar": {
                     "color": "#0071E3",
-                    "thickness": 0.26,
+                    "thickness": 0.24
                 },
-                "bgcolor": "rgba(0,0,0,0.035)",
+                "bgcolor": "#ECECF1",
                 "borderwidth": 0,
                 "steps": [
-                    {"range": [0, 20], "color": "#F2F2F7"},
-                    {"range": [20, 40], "color": "#E9F2FB"},
-                    {"range": [40, 60], "color": "#D9EAFB"},
-                    {"range": [60, 80], "color": "#BDDDF9"},
-                    {"range": [80, 100], "color": "#9ECDF6"},
-                ],
-            },
+                    {
+                        "range": [0, 20],
+                        "color": "#F2F2F7"
+                    },
+                    {
+                        "range": [20, 40],
+                        "color": "#E8F1FB"
+                    },
+                    {
+                        "range": [40, 60],
+                        "color": "#D6E8FA"
+                    },
+                    {
+                        "range": [60, 80],
+                        "color": "#BEDCF7"
+                    },
+                    {
+                        "range": [80, 100],
+                        "color": "#A7D0F4"
+                    }
+                ]
+            }
         )
     )
 
     fig_gauge.update_layout(
-        height=320,
-        margin=dict(l=30, r=30, t=20, b=20),
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(
-            family="-apple-system, BlinkMacSystemFont, SF Pro Display, Arial"
+        height=290,
+        margin=dict(
+            l=25,
+            r=25,
+            t=20,
+            b=10
         ),
+        paper_bgcolor="rgba(0,0,0,0)"
     )
 
     st.plotly_chart(
         fig_gauge,
         use_container_width=True,
-        config={"displayModeBar": False},
+        config={
+            "displayModeBar": False
+        }
     )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 with right:
-    st.markdown(
-        """
-<div class="section-wrap">
-<div class="section-title">植被致敏度</div>
-<div class="section-sub">Vegetation allergenicity</div>
-""",
-        unsafe_allow_html=True,
-    )
+    st.subheader("主要过敏树种贡献")
 
-    v1, v2 = st.columns(2)
-
-    with v1:
-        st.metric(
-            "标准 I_GZA",
-            result["标准 I_GZA"],
-        )
-
-        st.metric(
-            "植被相对评分",
-            result["植被相对评分"],
-        )
-
-    with v2:
-        st.metric(
-            "有效绿地 I_GZA*",
-            result["有效绿地 I_GZA*"],
-        )
-
-        st.metric(
-            "春季活跃系数",
-            result["春季活跃系数"],
-        )
-
-    st.caption(
-        "I_GZA 为文献指标；I_GZA* 是 BJ Pollenix "
-        "按有效绿地面积重新归一化的比较指标。"
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ------------------------------------------------------------
-# Species contribution
-# ------------------------------------------------------------
-
-st.markdown(
-    """
-<div class="section-wrap">
-<div class="section-title">主要过敏树种贡献</div>
-<div class="section-sub">Allergenic tree hazard contribution</div>
-""",
-    unsafe_allow_html=True,
-)
-
-species_df = pd.DataFrame({
-    "树种": list(
-        result["物种危险贡献"].keys()
-    ),
-    "危险贡献 (%)": list(
-        result["物种危险贡献"].values()
-    ),
-})
-
-fig_species = px.bar(
-    species_df,
-    x="树种",
-    y="危险贡献 (%)",
-    text="危险贡献 (%)",
-)
-
-fig_species.update_traces(
-    marker_color="#0071E3",
-    textposition="outside",
-)
-
-fig_species.update_layout(
-    height=330,
-    margin=dict(l=10, r=10, t=15, b=15),
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    xaxis=dict(
-        showgrid=False,
-        title=None,
-    ),
-    yaxis=dict(
-        gridcolor="rgba(0,0,0,0.06)",
-        zeroline=False,
-        title=None,
-    ),
-    font=dict(
-        family="-apple-system, BlinkMacSystemFont, SF Pro Display, Arial",
-        color="#1D1D1F",
-    ),
-)
-
-st.plotly_chart(
-    fig_species,
-    use_container_width=True,
-    config={"displayModeBar": False},
-)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ------------------------------------------------------------
-# Environmental conditions
-# ------------------------------------------------------------
-
-left2, right2 = st.columns([1, 1])
-
-with left2:
-    st.markdown(
-        """
-<div class="section-wrap">
-<div class="section-title">环境条件</div>
-<div class="section-sub">Dynamic environmental profile</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-    detailed = result["详细指标"]
-
-    radar_categories = list(
-        detailed.keys()
-    )
-
-    radar_values = list(
-        detailed.values()
-    )
-
-    radar_categories_closed = (
-        radar_categories
-        + [radar_categories[0]]
-    )
-
-    radar_values_closed = (
-        radar_values
-        + [radar_values[0]]
-    )
-
-    fig_radar = go.Figure()
-
-    fig_radar.add_trace(
-        go.Scatterpolar(
-            r=radar_values_closed,
-            theta=radar_categories_closed,
-            fill="toself",
-            line=dict(
-                color="#0071E3",
-                width=2,
+    species_df = pd.DataFrame({
+        "树种":
+            list(
+                result[
+                    "物种危险贡献"
+                ].keys()
             ),
-            fillcolor="rgba(0,113,227,0.14)",
-        )
+        "危险贡献 (%)":
+            list(
+                result[
+                    "物种危险贡献"
+                ].values()
+            )
+    })
+
+    fig_species = px.bar(
+        species_df,
+        x="树种",
+        y="危险贡献 (%)",
+        text="危险贡献 (%)",
     )
 
-    fig_radar.update_layout(
-        polar=dict(
-            bgcolor="rgba(0,0,0,0)",
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100],
-                gridcolor="rgba(0,0,0,0.07)",
-                tickfont=dict(
-                    color="#8E8E93"
-                ),
-            ),
-            angularaxis=dict(
-                gridcolor="rgba(0,0,0,0.06)",
-            ),
-        ),
-        showlegend=False,
-        height=350,
+    fig_species.update_traces(
+        marker_color="#0071E3",
+        textposition="outside",
+    )
+
+    fig_species.update_layout(
+        height=290,
         margin=dict(
-            l=35,
-            r=35,
-            t=25,
-            b=25,
+            l=10,
+            r=10,
+            t=20,
+            b=10
         ),
         paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(
-            family="-apple-system, BlinkMacSystemFont, SF Pro Display, Arial",
-            color="#1D1D1F",
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(
+            title=None,
+            showgrid=False,
         ),
+        yaxis=dict(
+            title=None,
+            gridcolor="rgba(0,0,0,0.06)",
+            zeroline=False,
+        ),
+        showlegend=False,
     )
 
     st.plotly_chart(
-        fig_radar,
+        fig_species,
         use_container_width=True,
-        config={"displayModeBar": False},
+        config={
+            "displayModeBar": False
+        }
     )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-with right2:
-    st.markdown(
-        """
-<div class="section-wrap">
-<div class="section-title">动态指标</div>
-<div class="section-sub">Calculated condition scores</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-    detail_df = pd.DataFrame(
-        result["详细指标"].items(),
-        columns=["指标", "评分"],
-    )
-
-    st.dataframe(
-        detail_df,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    d1, d2 = st.columns(2)
-
-    with d1:
-        st.metric(
-            "天气综合适宜度",
-            result["天气适宜度"],
-        )
-
-    with d2:
-        st.metric(
-            "PM2.5 增强系数",
-            result["PM2.5增强系数"],
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------
-# Raw vegetation parameters
+# Secondary metrics — no radar chart to keep the page clean
+# ------------------------------------------------------------
+
+st.subheader("植被与环境")
+
+v1, v2, v3, v4 = st.columns(4)
+
+with v1:
+    st.metric(
+        "标准 I_GZA",
+        result["标准 I_GZA"]
+    )
+
+with v2:
+    st.metric(
+        "有效绿地 I_GZA*",
+        result["有效绿地 I_GZA*"]
+    )
+
+with v3:
+    st.metric(
+        "植被相对评分",
+        result["植被相对评分"]
+    )
+
+with v4:
+    st.metric(
+        "背景花粉评分",
+        result["背景花粉评分"]
+    )
+
+
+detail_df = pd.DataFrame(
+    result["详细指标"].items(),
+    columns=[
+        "指标",
+        "评分"
+    ]
+)
+
+fig_detail = px.bar(
+    detail_df,
+    x="评分",
+    y="指标",
+    orientation="h",
+)
+
+fig_detail.update_traces(
+    marker_color="#34A853"
+)
+
+fig_detail.update_layout(
+    height=330,
+    margin=dict(
+        l=10,
+        r=10,
+        t=10,
+        b=10
+    ),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    xaxis=dict(
+        range=[0, 100],
+        title=None,
+        gridcolor="rgba(0,0,0,0.06)",
+    ),
+    yaxis=dict(
+        title=None,
+    ),
+    showlegend=False,
+)
+
+st.plotly_chart(
+    fig_detail,
+    use_container_width=True,
+    config={
+        "displayModeBar": False
+    }
+)
+
+
+# ------------------------------------------------------------
+# Supporting information
 # ------------------------------------------------------------
 
 with st.expander(
-    "查看当前公园的原始植被参数",
+    "查看原始植被参数",
     expanded=False,
 ):
     raw_species_df = pd.DataFrame([
         {
-            "树种": tree.chinese_name,
-            "学名": tree.scientific_name,
-            "株数": tree.count,
-            "AP": tree.allergenic_potential,
-            "PE": tree.pollen_emission,
-            "花期(d)": tree.flowering_duration,
-            "平均冠幅投影(m²)": tree.crown_area,
-            "平均树高(m)": tree.canopy_height,
-            "说明": tree.parameter_note,
+            "树种":
+                tree.chinese_name,
+            "学名":
+                tree.scientific_name,
+            "株数":
+                tree.count,
+            "AP":
+                tree.allergenic_potential,
+            "PE":
+                tree.pollen_emission,
+            "花期(d)":
+                tree.flowering_duration,
+            "平均冠幅投影(m²)":
+                tree.crown_area,
+            "平均树高(m)":
+                tree.canopy_height,
+            "说明":
+                tree.parameter_note,
         }
-        for tree in park.trees
+        for tree
+        in park.trees
     ])
 
     st.dataframe(
@@ -1722,19 +1400,15 @@ with st.expander(
     )
 
 
-# ------------------------------------------------------------
-# Methodology
-# ------------------------------------------------------------
-
 with st.expander(
-    "模型方法与数据局限",
+    "模型方法与局限",
     expanded=False,
 ):
     st.markdown(
         r"""
-### 1. 植被层
+### 植被层
 
-核心采用 Zhou et al. (2022) 使用的 **Green Zone Allergenicity Index (I_GZA)**：
+采用 Green Zone Allergenicity Index：
 
 \[
 I_{GZA}
@@ -1748,54 +1422,41 @@ N_i AP_i PE_i FD_i S_i H_i
 }
 \]
 
-其中包括树木数量、致敏潜力、产粉能力、花期、冠幅和树高。
+### 有效绿地
 
-### 2. 有效绿地假设
+- 北京动物园：40 ha
+- 颐和园：290.8 × 40% = 116.32 ha
 
-本 App 另外计算 **I_GZA\***：
+I_GZA* 是 BJ Pollenix 按有效绿地重新归一化的比较指标。
 
-- 北京动物园有效绿地：**40 ha**
-- 颐和园有效绿地：**290.8 × 40% = 116.32 ha**
+### 背景花粉
 
-这个 I_GZA* 是 BJ Pollenix 为比较局部有效绿地源强而加入的扩展，
-不是 Zhou et al. 原论文定义。
+背景花粉算法恢复为原模型的连续 logistic 评分：
 
-### 3. 背景花粉浓度
+\[
+P =
+\frac{100}{
+1 + e^{-0.158(x-24)}
+}
+\]
 
-背景木本花粉浓度输入 **仍然保留**，并且直接进入风险计算：
+输入主要限定在 **0–60 粒/m³**。
 
-`pollen_density → woody_pollen_level() → pollen_score() → calculate_risk()`
+### 气象层
 
-木本花粉浓度分级采用 Zhou et al. (2022) Table 1 的五级标准，
-单位为 **粒 / 1000 mm²**。
+风速、温度、湿度、降雨、日照用于动态修正。
+PM2.5 仅作为实验性的炎症增强因子。
 
-### 4. 气象层
+### 数据局限
 
-风速、温度、湿度、降雨和日照用于动态修正。
-变量方向具有北京花粉气象研究支持，
-但平滑曲线中的具体 sigma / midpoint 仍属于模型实现参数。
-
-### 5. 北京动物园局限
-
-北京动物园树种株数来自园区乔木普查；
-AP、PE、花期、冠幅和树高目前使用颐和园相同或近缘树种参数作为 proxy。
-
-### 6. 适用范围
-
-本版本主要针对 **春季木本花粉风险**。
+颐和园的主要树种参数来自文献；
+北京动物园的株数来自乔木普查，
+其 AP / PE / 花期 / 冠幅 / 树高暂使用颐和园同种或近缘树种参数作为 proxy。
 """
     )
 
 
-st.markdown(
-    """
-<div style="
-text-align:center;
-color:#8E8E93;
-font-size:0.76rem;
-padding:28px 0 6px 0;">
-BJ Pollenix · Experimental research & education index · Not a medical diagnosis
-</div>
-""",
-    unsafe_allow_html=True,
+st.caption(
+    "BJ Pollenix · Experimental research & education index · "
+    "Not a medical diagnosis."
 )
