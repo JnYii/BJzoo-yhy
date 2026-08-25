@@ -860,7 +860,7 @@ def calculate_risk(
 
 
 # ============================================================
-# Streamlit UI — ChatGPT web inspired
+# Streamlit UI — ChatGPT web inspired v2
 # ============================================================
 
 st.set_page_config(
@@ -869,6 +869,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# ------------------------------------------------------------
+# Minimal CSS: ChatGPT-like, compact typography, soft borders
+# ------------------------------------------------------------
 
 st.markdown(
     """
@@ -879,25 +883,25 @@ st.markdown(
     --sidebar:#F9F9FA;
     --text:#202123;
     --muted:#6B6F76;
-    --line:#E5E5E5;
+    --line:#E4E4E7;
     --soft:#F1F1F3;
     --accent:#10A37F;
     --accent-soft:#EAF7F3;
-    --warn-soft:#FFF7E6;
 }
 
 html, body, [class*="css"]{
     font-family:
+        Inter,
         ui-sans-serif,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         "Noto Sans SC",
         "PingFang SC",
-        "Helvetica Neue",
+        "Microsoft YaHei",
         Arial,
         sans-serif;
-    font-size:14px;
+    font-size:13.5px;
     color:var(--text);
 }
 
@@ -906,8 +910,8 @@ html, body, [class*="css"]{
 }
 
 .block-container{
-    max-width:1180px;
-    padding-top:1.5rem;
+    max-width:1200px;
+    padding-top:1.25rem;
     padding-bottom:3rem;
 }
 
@@ -917,50 +921,50 @@ section[data-testid="stSidebar"]{
 }
 
 section[data-testid="stSidebar"] > div{
-    padding-top:1.1rem;
+    padding-top:1rem;
 }
 
 h1{
-    font-size:2rem !important;
+    font-size:1.95rem !important;
     font-weight:700 !important;
     line-height:1.15 !important;
-    letter-spacing:-0.02em;
+    letter-spacing:-0.025em;
     color:var(--text);
 }
 
 h2{
-    font-size:1.25rem !important;
+    font-size:1.18rem !important;
     font-weight:650 !important;
     letter-spacing:-0.015em;
     color:var(--text);
 }
 
 h3{
-    font-size:1rem !important;
+    font-size:0.98rem !important;
     font-weight:650 !important;
     color:var(--text);
 }
 
 p, li, label, div{
-    line-height:1.5;
+    line-height:1.48;
 }
 
 [data-testid="stMetric"]{
     background:var(--panel);
     border:1px solid var(--line);
     border-radius:14px;
-    padding:14px 16px;
+    padding:13px 15px;
     box-shadow:none;
 }
 
 [data-testid="stMetricLabel"]{
     color:var(--muted);
-    font-size:0.78rem;
+    font-size:0.75rem;
 }
 
 [data-testid="stMetricValue"]{
     color:var(--text);
-    font-size:1.35rem;
+    font-size:1.28rem;
     letter-spacing:-0.02em;
 }
 
@@ -992,72 +996,81 @@ div[role="radiogroup"] label:has(input:checked){
     box-shadow:0 1px 3px rgba(0,0,0,0.08);
 }
 
-.stButton>button{
-    border-radius:10px;
-    border:1px solid var(--line);
-}
-
-.chat-panel{
-    background:var(--panel);
+.hero-strip{
+    background:#FFFFFF;
     border:1px solid var(--line);
     border-radius:16px;
-    padding:18px 20px;
-    margin-bottom:14px;
+    padding:18px 20px 16px 20px;
+    margin-bottom:12px;
 }
 
-.page-kicker{
+.hero-kicker{
     color:var(--muted);
-    font-size:0.78rem;
-    margin-bottom:6px;
+    font-size:0.72rem;
+    font-weight:600;
+    letter-spacing:0.04em;
+    margin-bottom:5px;
 }
 
-.page-title{
+.hero-title{
     color:var(--text);
-    font-size:2rem;
+    font-size:1.9rem;
     font-weight:700;
     letter-spacing:-0.025em;
-    line-height:1.15;
+    line-height:1.1;
 }
 
-.page-subtitle{
+.hero-sub{
     color:var(--muted);
-    font-size:0.92rem;
-    margin-top:8px;
-    max-width:820px;
+    font-size:0.86rem;
+    margin-top:7px;
+    max-width:850px;
 }
 
-.section-label{
-    font-size:1rem;
+.hero-meta{
+    margin-top:12px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+}
+
+.chip{
+    display:inline-block;
+    background:var(--soft);
+    color:#4C4F54;
+    border-radius:999px;
+    padding:4px 9px;
+    font-size:0.71rem;
+    font-weight:600;
+}
+
+.chip-green{
+    background:var(--accent-soft);
+    color:#087F63;
+}
+
+.section-title{
+    font-size:0.98rem;
     font-weight:650;
     color:var(--text);
-    margin-bottom:2px;
+    margin-bottom:1px;
 }
 
 .section-note{
     color:var(--muted);
-    font-size:0.76rem;
-    margin-bottom:10px;
-}
-
-.small-chip{
-    display:inline-block;
-    background:var(--accent-soft);
-    color:#087F63;
-    border-radius:999px;
-    padding:4px 9px;
-    font-size:0.74rem;
-    font-weight:600;
+    font-size:0.72rem;
+    margin-bottom:7px;
 }
 
 div[data-testid="stDataFrame"]{
-    border-radius:12px;
+    border-radius:10px;
     overflow:hidden;
 }
 
 hr{
     border:none;
     border-top:1px solid var(--line);
-    margin:1rem 0;
+    margin:0.9rem 0;
 }
 
 footer{
@@ -1075,10 +1088,10 @@ footer{
 
 st.sidebar.markdown(
     """
-<div style="font-size:1.25rem;font-weight:700;color:#202123;margin-bottom:2px;">
+<div style="font-size:1.2rem;font-weight:700;color:#202123;margin-bottom:1px;">
 京粉报
 </div>
-<div style="font-size:0.74rem;color:#6B6F76;margin-bottom:16px;">
+<div style="font-size:0.72rem;color:#6B6F76;margin-bottom:14px;">
 BJ Pollenix
 </div>
 """,
@@ -1111,7 +1124,7 @@ pollen_density = st.sidebar.slider(
     value=30,
     step=1,
     help=(
-        "背景花粉浓度继续使用原 BJ Pollenix 的连续 logistic 算法："
+        "继续使用原 BJ Pollenix 连续 logistic 算法："
         "midpoint=24，steepness=0.158。"
     ),
 )
@@ -1215,17 +1228,23 @@ risk = result["风险评分"]
 
 
 # ------------------------------------------------------------
-# Header
+# Fuller top section
 # ------------------------------------------------------------
 
 st.markdown(
     f"""
-<div class="chat-panel">
-    <div class="page-kicker">BJ POLLENIX · {park.name}</div>
-    <div class="page-title">京粉报</div>
-    <div class="page-subtitle">
-        基于局部致敏植被、背景花粉浓度与气象条件，
-        生成公园场景下的实验性过敏风险指数。
+<div class="hero-strip">
+    <div class="hero-kicker">BJ POLLENIX · PARK ALLERGY RISK</div>
+    <div class="hero-title">京粉报</div>
+    <div class="hero-sub">
+        基于局部致敏植被、背景花粉浓度和气象条件，
+        为公园场景生成动态实验性花粉过敏风险指数。
+    </div>
+    <div class="hero-meta">
+        <span class="chip chip-green">{park.name}</span>
+        <span class="chip">有效绿地 {park.effective_green_area_ha:.1f} ha</span>
+        <span class="chip">背景花粉 {pollen_density} 粒/m³</span>
+        <span class="chip">日期 {date}</span>
     </div>
 </div>
 """,
@@ -1253,8 +1272,8 @@ with m2:
 
 with m3:
     st.metric(
-        "背景花粉",
-        f"{pollen_density} 粒/m³"
+        "背景花粉评分",
+        f"{result['背景花粉评分']:.1f}/100"
     )
 
 with m4:
@@ -1269,287 +1288,431 @@ st.info(
 
 
 # ------------------------------------------------------------
-# Main overview
+# Risk gauge + vegetation
+# Uses st.container(border=True), so charts have real borders.
 # ------------------------------------------------------------
 
 left, right = st.columns(
-    [1.0, 1.0]
+    [1.05, 0.95]
 )
 
 with left:
-    st.markdown(
-        """
-<div class="chat-panel">
-<div class="section-label">综合风险</div>
+    with st.container(
+        border=True
+    ):
+        st.markdown(
+            """
+<div class="section-title">综合风险指数</div>
 <div class="section-note">Overall risk index</div>
 """,
-        unsafe_allow_html=True,
-    )
+            unsafe_allow_html=True,
+        )
 
-    fig_gauge = go.Figure(
-        go.Indicator(
-            mode="gauge+number",
-            value=risk,
-            number={
-                "font": {
-                    "size": 34,
-                    "color": "#202123",
-                }
-            },
-            gauge={
-                "axis": {
-                    "range": [0, 100],
-                    "tickfont": {
-                        "size": 10,
-                        "color": "#6B6F76",
-                    }
+        fig_gauge = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=risk,
+                number={
+                    "font": {
+                        "size": 34,
+                        "color": "#202123",
+                    },
+                    "suffix": "",
                 },
-                "bar": {
-                    "color": "#10A37F",
-                    "thickness": 0.22,
+                gauge={
+                    "axis": {
+                        "range": [0, 100],
+                        "tickmode": "array",
+                        "tickvals": [0, 20, 40, 60, 80, 100],
+                        "tickfont": {
+                            "size": 10,
+                            "color": "#6B6F76",
+                        },
+                    },
+                    "bar": {
+                        "color": "#10A37F",
+                        "thickness": 0.22,
+                    },
+                    "bgcolor": "#F1F1F3",
+                    "borderwidth": 1,
+                    "bordercolor": "#E4E4E7",
+                    "steps": [
+                        {"range": [0, 20], "color": "#FAFAFA"},
+                        {"range": [20, 40], "color": "#F1F8F6"},
+                        {"range": [40, 60], "color": "#E7F4F0"},
+                        {"range": [60, 80], "color": "#D9EEE8"},
+                        {"range": [80, 100], "color": "#C8E8DF"},
+                    ],
                 },
-                "bgcolor": "#F1F1F3",
-                "borderwidth": 0,
-                "steps": [
-                    {"range": [0, 20], "color": "#F7F7F8"},
-                    {"range": [20, 40], "color": "#F0F7F5"},
-                    {"range": [40, 60], "color": "#E7F4F0"},
-                    {"range": [60, 80], "color": "#D9EEE8"},
-                    {"range": [80, 100], "color": "#C7E7DE"},
-                ],
+            )
+        )
+
+        fig_gauge.update_layout(
+            height=255,
+            margin=dict(
+                l=35,
+                r=35,
+                t=12,
+                b=5
+            ),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(
+                family="Inter, Segoe UI, Noto Sans SC, Arial"
+            ),
+        )
+
+        st.plotly_chart(
+            fig_gauge,
+            use_container_width=True,
+            config={
+                "displayModeBar": False
             },
         )
-    )
-
-    fig_gauge.update_layout(
-        height=270,
-        margin=dict(l=20, r=20, t=10, b=5),
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(
-            family="Segoe UI, Noto Sans SC, Arial"
-        ),
-    )
-
-    st.plotly_chart(
-        fig_gauge,
-        use_container_width=True,
-        config={"displayModeBar": False},
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 with right:
-    st.markdown(
-        """
-<div class="chat-panel">
-<div class="section-label">植被危险度</div>
+    with st.container(
+        border=True
+    ):
+        st.markdown(
+            """
+<div class="section-title">植被危险度</div>
 <div class="section-note">Vegetation allergenicity</div>
 """,
-        unsafe_allow_html=True,
-    )
-
-    c1, c2 = st.columns(2)
-
-    with c1:
-        st.metric(
-            "标准 I_GZA",
-            result["标准 I_GZA"],
+            unsafe_allow_html=True,
         )
 
-        st.metric(
-            "植被相对评分",
-            result["植被相对评分"],
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.metric(
+                "标准 I_GZA",
+                result["标准 I_GZA"],
+            )
+
+            st.metric(
+                "植被相对评分",
+                result["植被相对评分"],
+            )
+
+        with c2:
+            st.metric(
+                "有效绿地 I_GZA*",
+                result["有效绿地 I_GZA*"],
+            )
+
+            st.metric(
+                "春季活跃系数",
+                result["春季活跃系数"],
+            )
+
+        st.caption(
+            "I_GZA 为文献指标；I_GZA* 为按有效绿地面积重新归一化的比较指标。"
         )
-
-    with c2:
-        st.metric(
-            "有效绿地 I_GZA*",
-            result["有效绿地 I_GZA*"],
-        )
-
-        st.metric(
-            "春季活跃系数",
-            result["春季活跃系数"],
-        )
-
-    st.caption(
-        "I_GZA 为文献指标；I_GZA* 为 BJ Pollenix "
-        "按有效绿地面积重新归一化后的比较指标。"
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------
 # Species contribution
 # ------------------------------------------------------------
 
-st.markdown(
-    """
-<div class="chat-panel">
-<div class="section-label">主要过敏树种贡献</div>
-<div class="section-note">Allergenic tree hazard contribution</div>
-""",
-    unsafe_allow_html=True,
-)
-
-species_df = pd.DataFrame({
-    "树种": list(
-        result["物种危险贡献"].keys()
-    ),
-    "危险贡献 (%)": list(
-        result["物种危险贡献"].values()
-    ),
-})
-
-fig_species = px.bar(
-    species_df,
-    x="树种",
-    y="危险贡献 (%)",
-    text="危险贡献 (%)",
-)
-
-fig_species.update_traces(
-    marker_color="#10A37F",
-    textposition="outside",
-    textfont_size=11,
-)
-
-fig_species.update_layout(
-    height=300,
-    margin=dict(l=10, r=10, t=10, b=10),
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    xaxis=dict(
-        showgrid=False,
-        title=None,
-        tickfont=dict(size=11),
-    ),
-    yaxis=dict(
-        gridcolor="#ECECEC",
-        zeroline=False,
-        title=None,
-        tickfont=dict(size=10),
-    ),
-    font=dict(
-        family="Segoe UI, Noto Sans SC, Arial",
-        color="#202123",
-    ),
-)
-
-st.plotly_chart(
-    fig_species,
-    use_container_width=True,
-    config={"displayModeBar": False},
-)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ------------------------------------------------------------
-# Environmental profile
-# ------------------------------------------------------------
-
-left2, right2 = st.columns(
-    [1.05, 0.95]
-)
-
-with left2:
+with st.container(
+    border=True
+):
     st.markdown(
         """
-<div class="chat-panel">
-<div class="section-label">环境条件</div>
-<div class="section-note">Dynamic environmental profile</div>
+<div class="section-title">主要过敏树种贡献</div>
+<div class="section-note">Allergenic tree hazard contribution</div>
 """,
         unsafe_allow_html=True,
     )
 
-    detail_df = pd.DataFrame(
-        result["详细指标"].items(),
-        columns=["指标", "评分"],
+    species_df = pd.DataFrame({
+        "树种": list(
+            result[
+                "物种危险贡献"
+            ].keys()
+        ),
+        "危险贡献 (%)": list(
+            result[
+                "物种危险贡献"
+            ].values()
+        ),
+    })
+
+    fig_species = px.bar(
+        species_df,
+        x="树种",
+        y="危险贡献 (%)",
+        text="危险贡献 (%)",
     )
 
-    fig_detail = px.bar(
-        detail_df,
-        x="评分",
-        y="指标",
-        orientation="h",
+    fig_species.update_traces(
+        marker_color="#10A37F",
+        textposition="outside",
+        textfont_size=10,
+        cliponaxis=False,
     )
 
-    fig_detail.update_traces(
-        marker_color="#10A37F"
-    )
-
-    fig_detail.update_layout(
-        height=340,
-        margin=dict(l=10, r=10, t=10, b=10),
+    fig_species.update_layout(
+        height=285,
+        margin=dict(
+            l=10,
+            r=10,
+            t=5,
+            b=8
+        ),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         xaxis=dict(
-            range=[0, 100],
+            showgrid=False,
             title=None,
-            gridcolor="#ECECEC",
             tickfont=dict(size=10),
         ),
         yaxis=dict(
+            gridcolor="#ECECEC",
+            zeroline=False,
             title=None,
-            tickfont=dict(size=11),
+            tickfont=dict(size=9),
         ),
         font=dict(
-            family="Segoe UI, Noto Sans SC, Arial",
+            family="Inter, Segoe UI, Noto Sans SC, Arial",
             color="#202123",
         ),
     )
 
     st.plotly_chart(
-        fig_detail,
+        fig_species,
         use_container_width=True,
-        config={"displayModeBar": False},
+        config={
+            "displayModeBar": False
+        },
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+
+# ------------------------------------------------------------
+# Radar + environmental score bars
+# ------------------------------------------------------------
+
+left2, right2 = st.columns(
+    [1, 1]
+)
+
+detailed = result[
+    "详细指标"
+]
+
+with left2:
+    with st.container(
+        border=True
+    ):
+        st.markdown(
+            """
+<div class="section-title">环境风险雷达图</div>
+<div class="section-note">Environmental risk radar</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+        radar_categories = list(
+            detailed.keys()
+        )
+
+        radar_values = list(
+            detailed.values()
+        )
+
+        radar_categories_closed = (
+            radar_categories
+            + [
+                radar_categories[0]
+            ]
+        )
+
+        radar_values_closed = (
+            radar_values
+            + [
+                radar_values[0]
+            ]
+        )
+
+        fig_radar = go.Figure()
+
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=radar_values_closed,
+                theta=radar_categories_closed,
+                fill="toself",
+                line=dict(
+                    color="#10A37F",
+                    width=2,
+                ),
+                fillcolor="rgba(16,163,127,0.16)",
+                hovertemplate="%{theta}: %{r:.1f}<extra></extra>",
+            )
+        )
+
+        fig_radar.update_layout(
+            polar=dict(
+                bgcolor="rgba(0,0,0,0)",
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 100],
+                    tickvals=[20, 40, 60, 80, 100],
+                    tickfont=dict(
+                        size=8,
+                        color="#8A8D91",
+                    ),
+                    gridcolor="#EAEAEA",
+                    linecolor="#EAEAEA",
+                ),
+                angularaxis=dict(
+                    tickfont=dict(
+                        size=9,
+                        color="#4D5055",
+                    ),
+                    gridcolor="#EAEAEA",
+                    linecolor="#EAEAEA",
+                ),
+            ),
+            showlegend=False,
+            height=335,
+            margin=dict(
+                l=42,
+                r=42,
+                t=18,
+                b=28,
+            ),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(
+                family="Inter, Segoe UI, Noto Sans SC, Arial"
+            ),
+        )
+
+        st.plotly_chart(
+            fig_radar,
+            use_container_width=True,
+            config={
+                "displayModeBar": False
+            },
+        )
 
 
 with right2:
+    with st.container(
+        border=True
+    ):
+        st.markdown(
+            """
+<div class="section-title">环境指标</div>
+<div class="section-note">Dynamic condition scores</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+        detail_df = pd.DataFrame(
+            detailed.items(),
+            columns=[
+                "指标",
+                "评分"
+            ],
+        )
+
+        fig_detail = px.bar(
+            detail_df,
+            x="评分",
+            y="指标",
+            orientation="h",
+            text="评分",
+        )
+
+        fig_detail.update_traces(
+            marker_color="#10A37F",
+            texttemplate="%{x:.1f}",
+            textposition="outside",
+            textfont_size=9,
+            cliponaxis=False,
+        )
+
+        fig_detail.update_layout(
+            height=335,
+            margin=dict(
+                l=8,
+                r=28,
+                t=5,
+                b=8
+            ),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(
+                range=[0, 105],
+                title=None,
+                gridcolor="#ECECEC",
+                tickfont=dict(size=9),
+            ),
+            yaxis=dict(
+                title=None,
+                tickfont=dict(size=9),
+                categoryorder="total ascending",
+            ),
+            font=dict(
+                family="Inter, Segoe UI, Noto Sans SC, Arial",
+                color="#202123",
+            ),
+        )
+
+        st.plotly_chart(
+            fig_detail,
+            use_container_width=True,
+            config={
+                "displayModeBar": False
+            },
+        )
+
+
+# ------------------------------------------------------------
+# Compact model metrics
+# ------------------------------------------------------------
+
+with st.container(
+    border=True
+):
     st.markdown(
         """
-<div class="chat-panel">
-<div class="section-label">当前模型指标</div>
+<div class="section-title">当前模型指标</div>
 <div class="section-note">Calculated values</div>
 """,
         unsafe_allow_html=True,
     )
 
-    d1, d2 = st.columns(2)
+    a1, a2, a3, a4 = st.columns(4)
 
-    with d1:
+    with a1:
         st.metric(
             "背景花粉评分",
             f"{result['背景花粉评分']:.1f}"
         )
 
+    with a2:
         st.metric(
             "天气适宜度",
             f"{result['天气适宜度']:.1f}"
         )
 
-    with d2:
+    with a3:
         st.metric(
-            "PM2.5 增强系数",
+            "PM2.5增强系数",
             result["PM2.5增强系数"]
         )
 
+    with a4:
         st.metric(
             "有效绿地树木密度",
             f"{result['有效绿地树木密度']} 株/ha"
         )
 
     st.caption(
-        f"当前纳入 {result['已纳入树木数量']} 株主要致敏乔木。"
+        f"当前模型纳入 {result['已纳入树木数量']} 株主要致敏乔木。"
     )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------
@@ -1562,17 +1725,27 @@ with st.expander(
 ):
     raw_species_df = pd.DataFrame([
         {
-            "树种": tree.chinese_name,
-            "学名": tree.scientific_name,
-            "株数": tree.count,
-            "AP": tree.allergenic_potential,
-            "PE": tree.pollen_emission,
-            "花期(d)": tree.flowering_duration,
-            "平均冠幅投影(m²)": tree.crown_area,
-            "平均树高(m)": tree.canopy_height,
-            "说明": tree.parameter_note,
+            "树种":
+                tree.chinese_name,
+            "学名":
+                tree.scientific_name,
+            "株数":
+                tree.count,
+            "AP":
+                tree.allergenic_potential,
+            "PE":
+                tree.pollen_emission,
+            "花期(d)":
+                tree.flowering_duration,
+            "平均冠幅投影(m²)":
+                tree.crown_area,
+            "平均树高(m)":
+                tree.canopy_height,
+            "说明":
+                tree.parameter_note,
         }
-        for tree in park.trees
+        for tree
+        in park.trees
     ])
 
     st.dataframe(
@@ -1631,8 +1804,8 @@ PM2.5 作为实验性炎症增强因子。
 
 ### 数据局限
 
-颐和园的主要树种参数来自文献；
-北京动物园的株数来自乔木普查，
+颐和园主要树种参数来自文献；
+北京动物园株数来自乔木普查，
 其 AP / PE / 花期 / 冠幅 / 树高暂使用颐和园同种或近缘树种参数作为 proxy。
 """
     )
